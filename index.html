@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="洪宇的技术博客-Ruby : 关于如何解决国内无法正常使用http://www.rubygems.org以及创建rails项目时bundle install出错的解决办法">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>洪宇的技术博客-Ruby</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/UrianHong">View on GitHub</a>
+
+          <h1 id="project_title">洪宇的技术博客-Ruby</h1>
+          <h2 id="project_tagline">关于如何解决国内无法正常使用http://www.rubygems.org以及创建rails项目时bundle install出错的解决办法</h2>
+
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>由于国内屏蔽了一些国外网站，导致很多用户在使用Ruby开发是经常会碰到<code>gem install rack</code>或<code>bundle install</code>的时候半天没有响应，具体原因可以用<code>gem install rails -V</code>来查看执行过程。<br>
+<br>
+有一个方法可以解决这个问题就是通过<strong>搭建 nginx 反向代理，提高 gem 的安装速度</strong>，具体做法是通过在一台国外的 VPS 主机上面，用 Nginx 反向代理到 rubygems.org 以及它的其他域名，然后本地改 hosts 文件指向那台主机。但是这样子无法长久保持。<br>
+后来国内有个与官方同步的镜像源(<a href="http://ruby.taobao.org">http://ruby.taobao.org</a>)，所以可以通过将默认源修改成国内的镜像源就可以解决这个问题。<br>
+具体方法如下：<br>
+<code>$ gem sources --remove https://rubygems.org/</code><br>
+<code>$ gem sources -a https://ruby.taobao.org/</code><br>
+<code>$ gem sources -l</code><br>
+<code>*** CURRENT SOURCES ***</code><br>
+<code>https://ruby.taobao.org</code><br>
+<code>$ gem install rails</code><br></p>
+
+<p>对于Rails项目通常需要将Gemfile的第一行改为<br>
+<code>$ source 'http://ruby.taobao.org/'</code><br>
+但是通过<code>rails new my_project</code>创建项目时，由于Gemfile生成以后立即执行bundle install，此时source尚未修改，所以项目创建的过程会半天没有响应，抛出<strong>Gem::RemoteFetcher::FetchError: Errno::ECONNRESET: Connection reset by peer - SSL_connect</strong>错误。<br>
+解决方法如下：<br>
+1.使用--skip-bundle参数 <br>
+通过设置--skip-bundle参数，rails new 命令创建完成项目骨架以后，不会执行bundle install。于是可以修改Gemfile行首的source，然后再执行bundle install。<br>
+代码如下：<br>
+<code>$ rails new app1 --skip-bundle</code><br></p>
+
+<p>2.修改Gemfile模板<br>
+通过修改Gemfile模板源，更改模板下载源头<br>
+<strong>MAC版</strong><br>
+<code>$ /usr/bin/sed -i .bak 's!https://rubygems.org!http://ruby.taobao.org!'</code>rvm info homes | grep gem: | awk '{print }' | tr -d '"'<code>/gems/railties-</code>gem list | grep railties | awk '{print }'| tr -d '()'<code>/lib/rails/generators/rails/app/templates/Gemfile</code><br>
+<strong>Linux版</strong><br>
+<code>$ sed -i 's!https://rubygems.org!http://ruby.taobao.org!'</code>rvm info homes | grep gem: | awk '{print }' | tr -d '"'<code>/gems/railties-</code>gem list | grep railties | awk '{print }'| tr -d '()'<code>/lib/rails/generators/rails/app/templates/Gemfile</code><br></p>
+
+<p>很多用户喜欢用rvm实现多版本ruby环境的管理和切换。<br>
+<strong>MAC版</strong><br>
+<code>$ sed -i .bak 's!cache.ruby-lang.org/pub/ruby!ruby.taobao.org/mirrors/ruby!' $rvm_path/config/db</code><br>
+<strong>Linux版</strong><br>
+<code>$ sed -i 's!cache.ruby-lang.org/pub/ruby!ruby.taobao.org/mirrors/ruby!' $rvm_path/config/db</code><br></p>
+
+<p>常见问题<br>
+    Q: 为何我新发布的 Gem 在淘宝源上面无法安装？<br>
+    A: 由于同步是定期执行的，新发布的 Gem 可能没有那么快同步过来，你需要稍等一段时间后才能使用。<br>
+    Q: 已经换成淘宝源了，但 bundle install 或 gem install xxx 的时候卡住很久不动？<br>
+    A: 这有可能是你网络问题，或者没有正确的好 gem 的源，你可以尝试 gem install xxx -V 并把执行过程的结果在 Ruby China 上面发帖求助。<br>
+    Q: gem install xxx 的时候遇到错误信息包含：“Error fetching data: Errno::ETIMEDOUT: Operation timed out - connect(2)”<br>
+    A: 网络问题导致请求淘宝服务器被连接重置了，在遇到此类情况的时候，你可以尝试换一台机器或网络尝试安装，看是否还有同样的问题，以确定是淘宝镜像服务器的问题还是你的环境问题，如果你换了环境仍然有问题，请上 Ruby China 发帖求助。<br></p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
